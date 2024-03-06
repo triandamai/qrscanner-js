@@ -119,28 +119,28 @@ export class QrScanner {
     }
 }
 
-function tes() {
-    const qr = QrScanner.init("#app", true)
-        .addOnMediaSourceListener((devices, err) => {
-            if (err) {
-                console.error(err)
-            }
-            console.table(devices)
-        })
-        .addScannerListener((result, err) => {
-            if (err) {
-                console.error(err)
-            }
-            if (result) {
-                console.log(result)
-            }
-        })
-
-    qr.searchMediaSource()
-    qr.start()
-}
-
-tes()
+// function tes() {
+//     const qr = QrScanner.init("#app", true)
+//         .addOnMediaSourceListener((devices, err) => {
+//             if (err) {
+//                 console.error(err)
+//             }
+//             console.table(devices)
+//         })
+//         .addScannerListener((result, err) => {
+//             if (err) {
+//                 console.error(err)
+//             }
+//             if (result) {
+//                 console.log(result)
+//             }
+//         })
+//
+//     qr.searchMediaSource()
+//     qr.start()
+// }
+//
+// tes()
 
 // @ts-ignore
 window.QrScanner = QrScanner
