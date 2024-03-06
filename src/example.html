@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Example</title>
+    <script type="text/javascript"  src="assets/index-BDD16rCZ.js"></script>
+    <link rel="stylesheet"  href="assets/index-Cz4zGhbH.css">
+    <script type="text/javascript">
+        window.addEventListener('load', () => {
+
+            //initialize
+            const qr = QrScanner.init("#app")
+
+            //for showing available device
+            const targetElement = document.querySelector < HTMLDivElement > ("#container")
+
+            //when device found
+            qr.addOnDeviceListener((devices, err) => {
+                if (err) {
+                    console.log(err)
+                    return
+                }
+                //append device to list
+                devices.forEach((device) => {
+                    const option = document.createElement("button")
+                    option.value = device.deviceId
+                    option.textContent = device.label
+                    option.addEventListener('click', () => {
+                        qr.setTargetSource(device)
+                    })
+                    targetElement?.append(option)
+                })
+
+            })
+
+            //search available devices
+            qr.searchMediaSource()
+
+            //listen result
+            qr.addScannerListener((result, err) => {
+                console.log("result", result)
+                console.log("err", err)
+            })
+
+            //start scanning
+            qr.start()
+        })
+
+    </script>
+</head>
+<body>
+<div id="app">
+    <div id="container">
+
+    </div>
+</div>
+</body>
+</html>
+
+
