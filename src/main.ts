@@ -14,11 +14,7 @@ export class QrScanner {
     private onDevicesFound: Map<string, onDeviceScan> = new Map<string, onDeviceScan>()
     private onResultScan: Map<string, onScannerResult> = new Map<string, onScannerResult>()
 
-    constructor(
-        html: HTMLElement | null,
-        reader: BrowserMultiFormatReader,
-        repeat: boolean
-    ) {
+    constructor(html: HTMLElement | null, reader: BrowserMultiFormatReader, repeat: boolean) {
         this.html = html
         this.retryAfterResult = repeat
         this.reader = reader
