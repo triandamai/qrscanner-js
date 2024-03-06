@@ -1,15 +1,15 @@
-import {BrowserMultiFormatReader, Exception} from "@zxing/library";
+import {BrowserMultiFormatReader, Exception, Result} from "@zxing/library";
 
 export type onDeviceScan = (data: Array<MediaDeviceInfo>, err: Exception | null) => void
 export type onScannerResult = (result: string, err: Exception | null) => void
 
 export class QrScanner {
     private selectedSource: MediaDeviceInfo | null = null
-    private listDevices: Array<MediaDeviceInfo> = []
+    private listMediaSource: Array<MediaDeviceInfo> = []
     private reader: BrowserMultiFormatReader | null = null
     private html: HTMLElement | null = null
     private videoElement: HTMLVideoElement | null = null
-    private retryAfterResult: boolean = false
+    private readonly retryAfterResult: boolean = false
 
     private onDevicesFound: Map<string, onDeviceScan> = new Map<string, onDeviceScan>()
     private onResultScan: Map<string, onScannerResult> = new Map<string, onScannerResult>()
@@ -18,6 +18,7 @@ export class QrScanner {
         this.html = html
         this.retryAfterResult = repeat
         this.reader = reader
+        this.listMediaSource = []
         this.videoElement = document.createElement("video")
         this.html?.append(this.videoElement)
     }
@@ -29,7 +30,7 @@ export class QrScanner {
         return new QrScanner(targetElement, reader, repeat)
     }
 
-    addOnDeviceListener(callback: onDeviceScan): QrScanner {
+    addOnMediaSourceListener(callback: onDeviceScan): QrScanner {
         this.onDevicesFound.set('1', callback)
         return this
     }
@@ -42,39 +43,25 @@ export class QrScanner {
     searchMediaSource() {
         this.getMediaPermission()
         if (this.reader == null) {
-            this.onDevicesFound.forEach(cb => cb([], new Exception(`Detector belum diinisiasi.`)))
+            this.notifyMediaSourceError(new Exception(`Detector belum diinisiasi.`))
             return
         }
-
-        this.reader.listVideoInputDevices().then((value) => {
-            this.listDevices = value
-            this.onDevicesFound.forEach(cb => cb(this.listDevices, null))
-        })
+        this.reader.listVideoInputDevices().then(result=>this.notifyMediaSourceSuccess(result))
     }
 
     searchMediaSourceWithCallback(callback: onDeviceScan) {
-        this.addOnDeviceListener(callback)
+        this.addOnMediaSourceListener(callback)
         this.searchMediaSource()
     }
 
     start() {
         console.info(`QrScanner`, `scanning`)
-        if (this.videoElement == null) return this.onResultScan
-            .forEach(cb => cb("", new Exception(`Elemen preview tidak ditemukan`)))
-        if (this.reader == null) return this.onResultScan
-            .forEach(cb => cb("", new Exception(`Scanner belum diinisiasi`)))
+        if (this.videoElement == null) return this.notifyScannerError(new Exception(`Elemen preview tidak ditemukan`))
+        if (this.reader == null) return this.notifyScannerError(new Exception(`Scanner belum diinisiasi`))
 
-        this.reader.decodeOnceFromVideoDevice(
-            this.selectedSource?.deviceId,
-            this.videoElement!!,
-        ).then((result => {
-            this.onResultScan.forEach(cb => cb(result.getText(), null))
-            if (this.retryAfterResult) {
-                setTimeout(() => {
-                    this.start()
-                }, 500)
-            }
-        })).catch(err => this.onResultScan.forEach(cb => cb("", err)))
+        this.reader.decodeOnceFromVideoDevice(this.selectedSource?.deviceId, this.videoElement!!,)
+            .then((value)=>this.notifyScannerSuccess(value))
+            .catch(err=>this.notifyScannerError(err))
     }
 
     private getMediaPermission() {
@@ -87,7 +74,29 @@ export class QrScanner {
                     audio: false
                 })
                 .then((v) => v)
-                .catch(err => this.onDevicesFound.forEach(cb => cb([], err)))
+                .catch(err=>this.notifyMediaSourceError(err))
+        }
+    }
+
+    private notifyMediaSourceError(err: Exception) {
+        this.onDevicesFound.forEach(callback => callback([], err))
+    }
+
+    private notifyMediaSourceSuccess(devices: Array<MediaDeviceInfo>) {
+        if(this.listMediaSource != undefined) {
+            this.listMediaSource = devices
+        }
+        this.onDevicesFound.forEach(callback => callback(devices, null))
+    }
+
+    private notifyScannerError(err: Exception) {
+        this.onResultScan.forEach(callback => callback("", err))
+    }
+
+    private notifyScannerSuccess(result: Result) {
+        this.onResultScan.forEach(cb => cb(result.getText(), null))
+        if (this.retryAfterResult) {
+            setTimeout(()=>this.start(), 1000)
         }
     }
 
@@ -104,30 +113,34 @@ export class QrScanner {
     getSelectedSource(): MediaDeviceInfo | null {
         return this.selectedSource
     }
+
+    getAvailableMediaSource(): Array<MediaDeviceInfo> {
+        return this.listMediaSource
+    }
 }
 
-// function tes() {
-//     const qr = QrScanner.init("#app", true)
-//         .addOnDeviceListener((devices, err) => {
-//             if (err) {
-//                 console.error(err)
-//             }
-//             console.table(devices)
-//         })
-//         .addScannerListener((result, err) => {
-//             if (err) {
-//                 console.error(err)
-//             }
-//             if (result) {
-//                 console.log(result)
-//             }
-//         })
-//
-//     qr.searchMediaSource()
-//     qr.start()
-// }
-//
-// tes()
+function tes() {
+    const qr = QrScanner.init("#app", true)
+        .addOnMediaSourceListener((devices, err) => {
+            if (err) {
+                console.error(err)
+            }
+            console.table(devices)
+        })
+        .addScannerListener((result, err) => {
+            if (err) {
+                console.error(err)
+            }
+            if (result) {
+                console.log(result)
+            }
+        })
+
+    qr.searchMediaSource()
+    qr.start()
+}
+
+tes()
 
 // @ts-ignore
 window.QrScanner = QrScanner
